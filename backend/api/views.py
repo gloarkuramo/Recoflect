@@ -8,6 +8,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -40,6 +41,55 @@ ai_bot: ai_abstract = gemini_ai()
 
 def serialize_family(family, request):
     return FamilySerializer(family, context={"request": request}).data
+
+# CBV
+class AdviceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        prompt_text = str(request.data.get("prompt", "")).strip()
+        if not prompt_text:
+            return Response(
+                {"detail": "Prompt is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            advice = ai_bot.prompt(prompt_text)
+        except ValueError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        return Response({"advice": advice}, status=status.HTTP_200_OK)
+
+# CBV
+class FamilyDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.family is None:
+            pending_request = (
+                FamilyJoinRequest.objects.filter(
+                    user=request.user, status=FamilyJoinRequest.Status.PENDING
+                )
+                .select_related("user", "family")
+                .first()
+            )
+            payload = {
+                "family": None,
+                "pending_join_request": FamilyJoinRequestSerializer(
+                    pending_request, context={"request": request}
+                ).data
+                if pending_request
+                else None,
+            }
+            return Response(payload, status=status.HTTP_200_OK)
+
+        return Response(
+            serialize_family(request.user.family, request), status=status.HTTP_200_OK
+        )
 
 
 @api_view(["POST"])

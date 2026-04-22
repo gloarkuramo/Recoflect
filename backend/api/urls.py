@@ -5,8 +5,10 @@ from rest_framework_simplejwt.views import (
 )
 
 from .views import (
+    AdviceAPIView,
     CategoryViewSet,
     CustomTokenObtainPairView,
+    FamilyDetailAPIView,
     GoalViewSet,
     RecordViewSet,
     RegisterView,
@@ -31,7 +33,9 @@ urlpatterns = [
     path("login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("advice/", advice_view, name="advice"),
+    path("advice-cbv/", AdviceAPIView.as_view(), name="advice_cbv"),
     path("family/", family_detail_view, name="family_detail"),
+    path("family-cbv/", FamilyDetailAPIView.as_view(), name="family_detail_cbv"),
     path("family/create/", family_create_view, name="family_create"),
     path("family/join/", family_join_view, name="family_join"),
     path("family/leave/", family_leave_view, name="family_leave"),
